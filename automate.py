@@ -322,10 +322,6 @@ serial_var = tk.IntVar()
 serial_checkbox = tk.Checkbutton(root, text="Serial", variable=serial_var)
 serial_checkbox.pack(pady=5)
 
-# Create and place the load data button
-load_button = tk.Button(root, text="Load Data", command=load_data)
-load_button.pack(pady=10)
-
 # Create and place the start automation button
 start_button = tk.Button(root, text="Start Automation", command=start_automation_thread)
 start_button.pack(pady=10)
@@ -340,7 +336,11 @@ purge_button.pack(pady=10)
 
 # Create and place the listbox to display progress
 listbox = tk.Listbox(root, width=50, height=10)
-listbox.pack(pady=10)
+listbox.pack(pady=15)
+
+# Create and place the grey text label
+footer_label = tk.Label(root, text="by JP 2024", fg="grey")
+footer_label.pack(pady=3)
 
 # Bind the Enter key to write to Excel
 root.bind('<Return>', write_to_excel)
