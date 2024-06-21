@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import messagebox, simpledialog
 import pandas as pd
 import pyautogui
 import time
@@ -91,26 +91,21 @@ def update_listbox(data):
 def automate_entry():
     global stop_automation_flag
     stop_automation_flag = False  # Ensure the flag is reset at the start
-    try:
-        logging.debug("Starting automation...")  # Debug
-        if data is None:
-            messagebox.showerror("No Data", "Please load the data first.")
-            return
 
-        # Ensure data is not empty
-        if data.empty:
-            logging.warning("Data is empty. Automation cannot proceed.")
-            messagebox.showwarning("No Data", "The loaded data is empty. Please check the file content.")
-            return
+    logging.debug("Starting automation...")  # Debug
+    if data is None or data.empty:
+        messagebox.showerror("No Data", "Please load the data first.")
+        return
 
-        def monitor_stop_key():
-            keyboard.wait('`')
-            stop_automation()
+    def monitor_stop_key():
+        keyboard.wait('`')
+        stop_automation()
 
-        monitor_thread = threading.Thread(target=monitor_stop_key)
-        monitor_thread.start()
+    monitor_thread = threading.Thread(target=monitor_stop_key)
+    monitor_thread.start()
 
-        for index, row in data.iterrows():
+    while not stop_automation_flag and not data.empty:
+        for index, row in data.head(1).iterrows():
             if stop_automation_flag:
                 logging.debug("Stop automation flag detected. Ending automation.")
                 break
@@ -122,6 +117,10 @@ def automate_entry():
 
             if pd.isna(invoice_number) or pd.isna(user_date):
                 logging.debug(f"Skipping row {index} due to missing data")  # Debug: Log message if data is missing
+                data.drop(index, inplace=True)  # Drop the row if it has missing data
+                data.reset_index(drop=True, inplace=True)
+                data.to_excel(file_path, index=False, header=False)
+                update_listbox(data)
                 continue
 
             # Convert invoice_number to string if it's a number
@@ -180,7 +179,7 @@ def automate_entry():
                 # Log progress
                 logging.debug("Automation step completed successfully.")  # Debug
 
-                # Delete the processed row
+                # Delete the processed row and update the Excel file
                 data.drop(index, inplace=True)
                 data.reset_index(drop=True, inplace=True)
                 data.to_excel(file_path, index=False, header=False)
@@ -193,16 +192,7 @@ def automate_entry():
                 logging.error(f"Error during automation step for row {index}: {automation_error}")  # Debug
                 break
 
-    except Exception as e:
-        logging.error(f"Error during automation: {e}")  # Debug: Log the exception
-        messagebox.showerror("Error", f"Failed to complete automation: {e}")
-
-    finally:
-        monitor_thread.join()
-
-def start_automation_thread():
-    automation_thread = threading.Thread(target=automate_entry)
-    automation_thread.start()
+    monitor_thread.join()
 
 # Function to delete the selected line from the Excel sheet
 def delete_selected_line():
@@ -294,6 +284,10 @@ def write_to_excel(event=None):
     except Exception as e:
         logging.error(f"Error writing to Excel: {e}")  # Debug
         messagebox.showerror("Error", f"Failed to write to Excel: {e}")
+
+def start_automation_thread():
+    automation_thread = threading.Thread(target=automate_entry)
+    automation_thread.start()
 
 # Main GUI setup
 root = tk.Tk()
